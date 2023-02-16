@@ -1,43 +1,36 @@
 package com.example.puppyeyesapp;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-// prueba
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.TextView;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.navigation.NavigationBarView;
-
-import java.util.Locale;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
     TextView textView;
+    TTSManager ttsManager = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //voz
         textView = findViewById(R.id.textView);
         //Service
         Intent intent = new Intent(MainActivity.this, MyService.class);
         startService(intent);
+        //Texto a voz
+        ttsManager= new TTSManager();
+        ttsManager.init(this);
+
     }
     public void onClick(View v){
         startActivity(new Intent(MainActivity.this, MapsActivity.class));
+        String texto = "Se encuentra en";
+        //ttsManager.initQueue(texto);
     }
     // Voz a texto
     public void speak(View view) {

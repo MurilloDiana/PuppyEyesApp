@@ -1,17 +1,24 @@
 package com.example.puppyeyesapp;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentActivity;
-
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.Manifest;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
+
+import com.example.puppyeyesapp.databinding.ActivityMapsBinding;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -19,12 +26,22 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.example.puppyeyesapp.databinding.ActivityMapsBinding;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
+    private LocationManager ubicacion;
+    private String direccion1;
+    TTSManager ttsManager = null;
+    // sensor
+    SensorManager sensorManager;
+    Sensor  sensor;
+    SensorEventListener sensorEventListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,9 +54,45 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        getLocalizacion();
+        try {
+            getLocalizacion();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        //Texto a voz
+        ttsManager= new TTSManager();
+        ttsManager.init(this);
+
+        //sensor
+        SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        final Sensor proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        SensorEventListener proximitySensorListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent sensorEvent) {
+                if(sensorEvent.values[0]< proximitySensor.getMaximumRange())
+                {
+                    String texto = "Se encuentra en " + direccion1;
+                    ttsManager.initQueue(texto);
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+            }
+        };
+        sensorManager.registerListener(proximitySensorListener,proximitySensor, 2*1000*1000);
+
     }
-    private void getLocalizacion() {
+    // parar el texto a voz
+    @Override
+    protected void onDestroy()
+    {
+        super.onDestroy();
+        ttsManager.shutDown();
+    }
+    // direcciones maps
+    public void getLocalizacion() throws IOException {
         int permiso = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION);
         if(permiso == PackageManager.PERMISSION_DENIED){
             if(ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)){
@@ -47,6 +100,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             }
         }
+        ubicacion = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Location loc = ubicacion.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+        List<Address> direccion= geocoder.getFromLocation(loc.getLatitude() , loc.getLongitude() ,1);
+        direccion1= direccion.get(0).getAddressLine(0);
+
     }
 
 
@@ -85,7 +144,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(miUbicacion));
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(miUbicacion)
-                        .zoom(25)
+                        .zoom(40)
                         .bearing(90)
                         .tilt(45)
                         .build();
@@ -108,7 +167,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         };
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, locationListener);
 
 
     }
