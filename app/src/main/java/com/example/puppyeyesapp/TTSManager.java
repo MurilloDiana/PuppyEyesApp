@@ -38,7 +38,7 @@ public class TTSManager implements TextToSpeech.OnInitListener {
                 }
                 else
                 {
-                    Log.e("erros" , "Fallo al inicializar");
+                    Log.e("error" , "Fallo al inicializar");
                 }
             }
         }
