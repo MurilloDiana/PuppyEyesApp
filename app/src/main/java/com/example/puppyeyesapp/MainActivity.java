@@ -16,6 +16,7 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -25,11 +26,15 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     TextView textView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.textView);
+        //Service
+        Intent intent = new Intent(MainActivity.this, MyService.class);
+        startService(intent);
     }
     public void onClick(View v){
         startActivity(new Intent(MainActivity.this, MapsActivity.class));
