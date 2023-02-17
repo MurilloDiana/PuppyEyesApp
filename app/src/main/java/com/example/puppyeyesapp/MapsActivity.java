@@ -38,6 +38,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ActivityMapsBinding binding;
     private LocationManager ubicacion;
     private String direccion1;
+
     SearchView searchView;
     String coordenada;
     String coordenada1;
@@ -148,6 +149,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        //RequestQueue  queue = Volley.newRequestQueue(this);
+        //direccion();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -183,6 +186,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     coordenada1= String.valueOf(addres.getLatitude()+ addres.getLongitude());
                 }
 
+                /*String url = "https://maps.googleapis.com/maps/api/directions/json?origin=-17.789262,-60.102875&destination=-17.789262,-68.102875";
+                StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject jso = new JSONObject(response);
+                            direccio(jso);
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+
+                    }
+                });
+                queue.add(stringRequest);*/
+
                 // mi ubicacion
                 LatLng miUbicacion = new LatLng(location.getLatitude(), location.getLongitude());
                 mMap.addMarker(new MarkerOptions().position(miUbicacion).title("ubicacion actual"));
@@ -190,7 +212,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 coordenada = String.valueOf(location.getLatitude()+location.getLongitude());
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(miUbicacion)
-                        .zoom(40)
+                        .zoom(80)
                         .bearing(90)
                         .tilt(45)
                         .build();
@@ -215,14 +237,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         };
 
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, locationListener);
-
+        //direccion();
 
     }
-    /*private void direccion(){
+    /*private void direccion(JSONObject jso){
+        JSONArray jRoutes;
+        JSONArray jLegs;
+        JSONArray jSteps;
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String url = Uri.parse("https://googleapis.com/maps/api/directions/json").buildUpon()
-                .appendQueryParameter("origin",coordenada)
-                .appendQueryParameter("destino",coordenada1)
+        String url = Uri.parse("https://maps.googleapis.com/maps/api/directions/json")
+                .buildUpon()
+                .appendQueryParameter("destination","-17.789280, -63.102392")
+                .appendQueryParameter("origin","-17.795368, -63.103808")
                 .appendQueryParameter("node", "driving")
                 .appendQueryParameter("key", "AIzaSyA1CIhVp0BxGMmRAX6i5YghAegq6D7LXTg")
                 .toString();
@@ -234,27 +260,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                   if(status.equals("OK")){
                       JSONArray routes = response.getJSONArray("routes");
                       ArrayList<LatLng> points;
-                      PolygonOptions polygonOptions = null;
+                      PolylineOptions polylineOptions = null;
                       for(int i=0; i< routes.length(); i++){
                           points = new ArrayList<>();
-                          polygonOptions = new PolygonOptions();
+                          polylineOptions = new PolylineOptions();
                           JSONArray legs = routes.getJSONObject(i).getJSONArray("legs");
                           for(int j=0;j<legs.length(); j++){
                               JSONArray steps = legs.getJSONObject(j).getJSONArray("steps");
                               for(int k =0 ; k< steps.length(); k++){
                                   String polyline = steps.getJSONObject(k).getJSONObject("polyline").getString("points");
-                                  List<LatLng> List= decodePoly(polyline);
-                                  for(int l=0; l< List.size(); l++){
-                                      LatLng positi = new LatLng((List.get(l)).latitude,(List.get(l).longitude));
+                                  List<LatLng> list= decodePoly(polyline);
+                                  for(int l=0; l< list.size(); l++){
+                                      LatLng positi = new LatLng((list.get(l)).latitude,(list.get(l).longitude));
+                                      points.add(positi);
                                   }
                               }
                           }
-                          polygonOptions.addAll(points);
-                          polygonOptions.strokeWidth(10);
-                          polygonOptions.fillColor(ContextCompat.getColor((MapsActivity.this, R.color.purple_500)));
-                          polygonOptions.geodesic(true);
+                          polylineOptions.addAll(points);
+                          polylineOptions.width(10);
+                          polylineOptions.color(ContextCompat.getColor(MapsActivity.this, R.color.purple_500));
+                          polylineOptions.geodesic(true);
                       }
-                      mMap.addPolyline(polygonOptions);
+
+                      mMap.addPolyline(polylineOptions);
+                      mMap.addMarker(new MarkerOptions().position(new LatLng(-17.789262,-60.102875)).title("direccion"));
+                      mMap.addMarker(new MarkerOptions().position(new LatLng(-17.789262,-68.102875)).title("llegada"));
+                      LatLngBounds bounds = new LatLngBounds.Builder()
+                              .include(new LatLng(-17.789262,-63.102875))
+                              .include(new LatLng(-17.795368, -63.103808)).build();
+                      Point point1 = new Point();
+                      getWindowManager().getDefaultDisplay().getSize(point1);
+                      mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, point1.x, 150 , 30));
+
                   }
               } catch (JSONException e) {
                   throw new RuntimeException(e);
@@ -266,7 +303,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
-
+        RetryPolicy retryPolicy =  new DefaultRetryPolicy(30000, DefaultRetryPolicy.DEFAULT_MAX_RETRIES , DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+        jsonObjectRequest.setRetryPolicy(retryPolicy);
+        requestQueue.add(jsonObjectRequest);
     }
     private List<LatLng> decodePoly(String encoded){
         List<LatLng> poly = new ArrayList<>();
@@ -279,7 +318,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 result |=(b & 0x1f)<< shift;
                 shift +=5;
             }
-            while(b>=0x28);
+            while(b>=0x20);
             int dlat = ((result & 1) != 0? ~(result >>1) : (result>>1));
             lat+= dlat;
             shift=0;
@@ -295,5 +334,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             poly.add(p);
         }
         return poly;
+    }
+    private void direccio(JSONObject jso){
+        JSONArray jRoutes;
+        JSONArray jLegs;
+        JSONArray jSteps;
+        try {
+            jRoutes = jso.getJSONArray("routes");
+                for(int i=0; i< jRoutes.length(); i++){
+                    jLegs=((JSONObject)(jRoutes.get(i))).getJSONArray("legs");
+
+                    for(int j=0;j<jLegs.length(); j++){
+                        jSteps=((JSONObject)(jRoutes.get(i))).getJSONArray("steps");
+                        for(int k =0 ; k< jSteps.length(); k++){
+                            String polyline = ""+((JSONObject)((JSONObject)jSteps.get(k)).get("polyline")).get("points");
+                            Log.i("end", ""+polyline);
+                            List<LatLng>list = PolyUtil.decode(polyline);
+                            mMap.addPolyline(new PolylineOptions().addAll(list).color(Color.GRAY).width(5));
+
+                        }
+                    }
+
+                }
+
+            } catch (JSONException ex) {
+            throw new RuntimeException(ex);
+        }
     }*/
 }
