@@ -1,7 +1,9 @@
 package com.example.puppyeyesapp;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -13,8 +15,11 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.speech.RecognizerIntent;
 import android.widget.SearchView;
 
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -29,6 +34,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -80,8 +86,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onSensorChanged(SensorEvent sensorEvent) {
                 if(sensorEvent.values[0]< proximitySensor.getMaximumRange())
                 {
-                    String texto = "Se encuentra en " + direccion1;
-                    ttsManager.initQueue(texto);
+                    //String texto = "Se encuentra en " + direccion1;
+                    //ttsManager.initQueue(texto);
+                    speak();
+
 
                 }
                 /*movimiento
@@ -361,4 +369,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             throw new RuntimeException(ex);
         }
     }*/
+    private void speak() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,  "es-MX");
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Comienza a hablar");
+        try {
+            startActivityForResult(intent, 100);
+        }catch (ActivityNotFoundException e)
+        {
+
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == 100 && resultCode == RESULT_OK && data !=null){
+            ArrayList<String> arrayList = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if(arrayList.get(0).toString().equals("dónde estoy"))
+            {
+                Intent camera= new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivity(camera);
+            }
+        }
+
+    }
 }
