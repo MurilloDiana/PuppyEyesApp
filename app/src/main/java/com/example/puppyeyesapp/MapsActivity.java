@@ -86,8 +86,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onSensorChanged(SensorEvent sensorEvent) {
                 if(sensorEvent.values[0]< proximitySensor.getMaximumRange())
                 {
-                    //String texto = "Se encuentra en " + direccion1;
-                    //ttsManager.initQueue(texto);
+                    String texto = "Se encuentra en " + direccion1;
+                    ttsManager.initQueue(texto);
                     speak();
 
 
@@ -114,12 +114,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         sensorManager.registerListener(proximitySensorListener,proximitySensor, 2*1000*1000);
         //sensorManager.registerListener(sensorEventListener, sensor1 ,SensorManager.SENSOR_DELAY_NORMAL);
 
-        //busqueda de lugares
-
-
     }
 
-    // parar el texto a voz
     @Override
     protected void onDestroy()
     {
@@ -135,7 +131,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             }
         }
-        //obtenre direccion actual
+        //obtener direccion actual
         ubicacion = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         Location loc = ubicacion.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
@@ -215,7 +211,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 // mi ubicacion
                 LatLng miUbicacion = new LatLng(location.getLatitude(), location.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(miUbicacion).title("ubicacion actual"));
+                //mMap.addMarker(new MarkerOptions().position(miUbicacion).title("ubicacion actual"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(miUbicacion));
                 coordenada = String.valueOf(location.getLatitude()+location.getLongitude());
                 CameraPosition cameraPosition = new CameraPosition.Builder()
