@@ -15,7 +15,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.widget.SearchView;
 
@@ -86,8 +85,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onSensorChanged(SensorEvent sensorEvent) {
                 if(sensorEvent.values[0]< proximitySensor.getMaximumRange())
                 {
-                    String texto = "Se encuentra en " + direccion1;
-                    ttsManager.initQueue(texto);
+
                     speak();
 
 
@@ -174,7 +172,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onLocationChanged(Location location) {
                 // buscar lugares
-                String location1 = "Cinecenter";
+                String location1 = "cochabamba";
                 if(location1!= null || location1 != (""))
                 {
                     List<Address> addressesList = null;
@@ -383,11 +381,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         if(requestCode == 100 && resultCode == RESULT_OK && data !=null){
             ArrayList<String> arrayList = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            if(arrayList.get(0).toString().equals("dónde estoy"))
+            switch (arrayList.get(0).toString())
             {
-                Intent camera= new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivity(camera);
+                case "dónde estoy" :
+                    ttsManager.initQueue("Se encuentra en " + direccion1);
+                    break;
+                case "mi ubicación":
+                    ttsManager.initQueue("Se encuentra en " + direccion1);
+                    break;
+                case "ubicación actual":
+                    ttsManager.initQueue("Se encuentra en " + direccion1);
+                    break;
+                case "mandar ayuda" :
+                    //ttsManager.initQueue("Se encuentra en " + direccion1);
+                    break;
+                case "mandar mi ubicación":
+                    //ttsManager.initQueue("Se encuentra en " + direccion1);
+                    break;
+                case "solicitar ayuda":
+                    //ttsManager.initQueue("Se encuentra en " + direccion1);
+                    break;
             }
+
         }
 
     }
