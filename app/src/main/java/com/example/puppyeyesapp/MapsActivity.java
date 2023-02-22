@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -14,9 +15,12 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
+import android.util.Log;
 import android.widget.SearchView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
@@ -31,6 +35,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.PolyUtil;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +53,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ActivityMapsBinding binding;
     private LocationManager ubicacion;
     private String direccion1;
+    JSONObject jso;
 
     SearchView searchView;
     String coordenada;
@@ -167,6 +178,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
+
         LocationManager locationManager = (LocationManager) MapsActivity.this.getSystemService(Context.LOCATION_SERVICE);
         LocationListener locationListener = new LocationListener() {
             @Override
@@ -188,24 +200,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     coordenada1= String.valueOf(addres.getLatitude()+ addres.getLongitude());
                 }
 
-                /*String url = "https://maps.googleapis.com/maps/api/directions/json?origin=-17.789262,-60.102875&destination=-17.789262,-68.102875";
-                StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject jso = new JSONObject(response);
-                            direccio(jso);
-                        } catch (JSONException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
 
-                    }
-                });
-                queue.add(stringRequest);*/
 
                 // mi ubicacion
                 LatLng miUbicacion = new LatLng(location.getLatitude(), location.getLongitude());
@@ -219,6 +214,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         .tilt(45)
                         .build();
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                /*RequestQueue queue = Volley.newRequestQueue(getParent());
+                String url = "https://maps.googleapis.com/maps/api/directions/json?origin=-17.789262,-60.102875&destination=-17.789262,-68.102875";
+                StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                             jso = new JSONObject(response);
+                            dibujarRuta(jso);
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+
+                    }
+                });
+                queue.add(stringRequest);*/
 
             }
 
@@ -239,7 +254,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         };
 
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, locationListener);
-        //direccion();
+        //direccion(jso);
 
     }
     /*private void direccion(JSONObject jso){
@@ -336,8 +351,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             poly.add(p);
         }
         return poly;
-    }
-    private void direccio(JSONObject jso){
+    }*/
+    private void dibujarRuta(JSONObject jso){
         JSONArray jRoutes;
         JSONArray jLegs;
         JSONArray jSteps;
@@ -362,7 +377,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } catch (JSONException ex) {
             throw new RuntimeException(ex);
         }
-    }*/
+    }
     private void speak() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,  "es-MX");
@@ -384,26 +399,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             switch (arrayList.get(0).toString())
             {
                 case "dónde estoy" :
-                    ttsManager.initQueue("Se encuentra en " + direccion1);
-                    break;
+                case "ubicación actual":
                 case "mi ubicación":
                     ttsManager.initQueue("Se encuentra en " + direccion1);
                     break;
-                case "ubicación actual":
-                    ttsManager.initQueue("Se encuentra en " + direccion1);
-                    break;
                 case "mandar ayuda" :
-                    //ttsManager.initQueue("Se encuentra en " + direccion1);
-                    break;
-                case "mandar mi ubicación":
-                    //ttsManager.initQueue("Se encuentra en " + direccion1);
-                    break;
                 case "solicitar ayuda":
-                    //ttsManager.initQueue("Se encuentra en " + direccion1);
+                case "mandar mi ubicación":
+                    ttsManager.initQueue("Mandando ayuda");
+                    onClickWhatsapp();
                     break;
+                case "llamar" :
+                case "realizar llamada":
+                case "ayuda por llamada":
+                    ttsManager.initQueue("realizando llamada");
+                    onClickLlamada();
+                    break;
+                default:
+                    ttsManager.initQueue("no se encontro el comando vuelva a intentar");
             }
 
         }
 
+    }
+    public void onClickLlamada() {
+        int permiso= ContextCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.CALL_PHONE);
+        if(permiso != PackageManager.PERMISSION_GRANTED){
+            Toast.makeText(this, "No tiene permiso de llamadas", Toast.LENGTH_SHORT).show();
+            ActivityCompat.requestPermissions(MapsActivity.this, new String[]{Manifest.permission.CALL_PHONE}, 255 );
+        }
+        else{
+            String nro="78575353";
+            String inicio="tel:" + nro;
+            Intent i = new Intent(Intent.ACTION_CALL);
+            i.setData(Uri.parse(inicio));
+            startActivity(i);
+        }
+
+    }
+    public void onClickWhatsapp(){
+        Uri uri= Uri.parse("http://wa.link/lmnslp");
+        Intent i = new Intent(Intent.ACTION_VIEW,uri);
+        startActivity(i);
     }
 }
